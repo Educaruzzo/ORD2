@@ -16,7 +16,6 @@ typedef struct bucket {
 
 typedef struct dir_cell {
     BUCKET *bucket_ref;
-    struct dir_cell *proxcell;
 } DIR_CELL;
 
 typedef struct diret {
@@ -33,20 +32,19 @@ DIRETORIO diretorio = {0, NULL};
 
 void RecuperaDiretorio(FILE *arqdir) {   // Formato do arqdir: #ID_NUM#profundidade#dircell1#dircell2...
 
-    DIR_CELL *celula;
+    int i, tam_dir;
 
     fseek(arqdir, 0, SEEK_SET);
 
     fread(&ID_NUM, TAM_IDNUM, 1, arqdir);
     fread(&diretorio.profundidade, TAM_DIRPROF, 1, arqdir);
 
-    celula = (DIR_CELL*) malloc (sizeof(DIR_CELL*));
-    fread(&celula.bucket_ref, sizeof(BUCKET*), 1, arqdir);
-    diretorio.celulas = celula;
-    while (!feof(arqdir)) {
-        celula.proxcell = (DIR_CELL*) malloc (sizeof(DIR_CELL*));
-        celula = celula.proxcell;
-        celula.
+    tam_dir = (int) pow(2, diretorio.profundidade);
+
+    diretorio.celulas = (DIR_CELL*) malloc (tam_dir*sizeof(DIR_CELL));
+
+    for (i = 0; i < tam_dir; i++) {
+        fread(&diretorio.celulas[i].bucket_ref, sizeof(BUCKET*), 1, arqdir);
     }
 }
 
@@ -248,6 +246,7 @@ int main () {
     if (arqdir == NULL) {
         arqdir = fopen("diretorio.txt", "w");
         diretorio.celulas = (DIR_CELL*) malloc(sizeof(DIR_CELL));
+        diretorio.celulas[0].bucket_ref = NULL;
     }
     else {
         RecuperaDiretorio(arqdir);
