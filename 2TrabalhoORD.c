@@ -40,7 +40,14 @@ void RecuperaDiretorio(FILE *arqdir) {   // Formato do arqdir: #ID_NUM#profundid
     fread(&ID_NUM, TAM_IDNUM, 1, arqdir);
     fread(&diretorio.profundidade, TAM_DIRPROF, 1, arqdir);
 
-    celula =
+    celula = (DIR_CELL*) malloc (sizeof(DIR_CELL*));
+    fread(&celula.bucket_ref, sizeof(BUCKET*), 1, arqdir);
+    diretorio.celulas = celula;
+    while (!feof(arqdir)) {
+        celula.proxcell = (DIR_CELL*) malloc (sizeof(DIR_CELL*));
+        celula = celula.proxcell;
+        celula.
+    }
 }
 
 
