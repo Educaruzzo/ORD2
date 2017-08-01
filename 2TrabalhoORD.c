@@ -66,7 +66,7 @@ int make_address(int KEY, int PROF) {
 }
 
 
-BUCKET* find_bucket_address(int ADDRESS) {
+/*BUCKET* find_bucket_address(int ADDRESS) {
 
     int i;
     DIR_CELL *celula = diretorio.celulas;
@@ -76,41 +76,27 @@ BUCKET* find_bucket_address(int ADDRESS) {
     }
 
     return celula->bucket_ref;
-}
+}*/
 
 void dir_double() {
 
     DIRETORIO NOVO_DIR;
     int TAM_ATUAL, NOVO_TAM, i;
-    DIR_CELL *pntCelula, *pntCelulaNova;
+    DIR_CELL *pntCelula;
 
     TAM_ATUAL = (int) pow(2.0, (double) diretorio.profundidade);
     NOVO_TAM = 2*TAM_ATUAL;
-
-    for (i = 1; i <= NOVO_TAM; i++) {
-        pntCelula = (DIR_CELL*) malloc(sizeof(DIR_CELL));
-        (*pntCelula).proxcell = NULL;
-        InsereDiretorio(&NOVO_DIR.celulas, pntCelula);
-    }
-
-    pntCelula = diretorio.celulas;
-    pntCelulaNova = NOVO_DIR.celulas;
+    
+    pntCelula = (DIR_CELL*) malloc(NOVO_TAM*sizeof(DIR_CELL));
+    //InsereDiretorio(&NOVO_DIR.celulas, pntCelula);
+    
     for (i = 0; i < TAM_ATUAL; i++) {
-        pntCelulaNova->bucket_ref = pntCelula->bucket_ref;
-        pntCelulaNova = pntCelulaNova->proxcell;
-        pntCelulaNova->bucket_ref = pntCelula->bucket_ref;
-        pntCelulaNova = pntCelulaNova->proxcell;
+        pntCelula[2*i].bucket_ref = diretorio.celulas[i].bucket_ref;
+        pntCelula[2*i + 1].bucket_ref = diretorio.celulas[i].bucket_ref;
     }
+    free(diretorio.celulas);
+    diretorio.celulas = pntCelula;
 
-    pntCelula = diretorio.celulas;
-    while((pntCelula->proxcell) != NULL) {
-        pntCelulaNova = pntCelula;
-        pntCelula = pntCelula->proxcell;
-        free(pntCelulaNova);
-    }
-    free(pntCelula);
-
-    diretorio.celulas = NOVO_DIR.celulas;
     diretorio.profundidade = diretorio.profundidade + 1;
 }
 
@@ -135,42 +121,36 @@ void find_new_range (BUCKET OLD_BUCKET, int *NEW_START, int *NEW_END) {
 void dir_ins_bucket (BUCKET* BUCKET_ADDRESS, int START, int END) {
 
     int j;
-    DIR_CELL *pntCelula = diretorio.celulas;
-
-    for (j = 0; j < START; j++) {
-        pntCelula = pntCelula->proxcell;
-    }
 
     for (j = START; j <= END; j++) {
-        pntCelula->bucket_ref = BUCKET_ADDRESS;
-        pntCelula = pntCelula->proxcell;
+        diretorio.celulas[j].bucket_ref = BUCKET_ADDRESS;
     }
 }
 
-void bk_split (BUCKET Buck) {
+void bk_split (BUCKET *Buck) {
 
     BUCKET *END_NOVO_BUCKET = (BUCKET*) malloc(sizeof(BUCKET));
 
     int NEW_START, NEW_END, i, j;
     int guardakeys[TAM_MAX_BUCKET];
 
-    if (Buck.prof == diretorio.profundidade) {
+    if ((*Buck).prof == diretorio.profundidade) {
         dir_double();
     }
 
-    find_new_range(Buck, &NEW_START, &NEW_END);
+    find_new_range((*Buck), &NEW_START, &NEW_END);
     dir_ins_bucket(END_NOVO_BUCKET, NEW_START, NEW_END);
 
-    Buck.prof = Buck.prof + 1;
-    (*END_NOVO_BUCKET).prof = Buck.prof;
+    (*Buck).prof = (*Buck).prof + 1;
+    (*END_NOVO_BUCKET).prof = (*Buck).prof;
     (*END_NOVO_BUCKET).cont = 0;
     (*END_NOVO_BUCKET).id = ID_NUM;
     ID_NUM++;
 
-    for(i = 0; i < Buck.cont; i++) {
-        guardakeys[i] = Buck.chaves[i];
+    for(i = 0; i < (*Buck).cont; i++) {
+        guardakeys[i] = (*Buck).chaves[i];
     }
-    Buck.cont = 0;
+    (*Buck).cont = 0;
 
     for(j = 0; j < i; j++) {
         op_add(guardakeys[j]);
@@ -183,7 +163,7 @@ void bk_add_key (BUCKET *Buck, int KEY) {
         (*Buck).cont++;
     }
     else {
-        bk_split((*Buck));
+        bk_split(Buck);
         op_add(KEY);
     }
 }
@@ -193,9 +173,9 @@ int op_find (int KEY, BUCKET **FOUND_BUCKET) {
     int ADDRESS = make_address(KEY, diretorio.profundidade);
     int j;
 
-    (*FOUND_BUCKET) = find_bucket_adress(ADDRESS);
+    (*FOUND_BUCKET) = diretorio.celulas[ADDRESS].bucket_ref;
 
-    for (j = 0; j < TAM_MAX_BUCKET; j++) {
+    for (j = 0; j < (*FOUND_BUCKET)->cont; j++) {
         if ((*FOUND_BUCKET)->chaves[j] == KEY) {
             return 1;
         }
@@ -210,7 +190,7 @@ int op_add (int KEY) {
     BUCKET *FOUND_BUCKET;
 
     if (!(op_find(KEY, &FOUND_BUCKET))) {
-        bk_add_key((*FOUND_BUCKET), KEY);
+        bk_add_key(FOUND_BUCKET, KEY);
         return 1;
     }
 
