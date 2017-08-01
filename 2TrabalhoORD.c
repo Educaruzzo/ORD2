@@ -30,6 +30,59 @@ DIRETORIO diretorio = {0, NULL};
 
 
 
+
+
+void ExibeBuckets() {
+    
+    int i, tam_dir;
+    
+    tam_dir = (int) pow(2, diretorio.profundidade);
+    
+    printf("\n\n Diretorio:");
+    for (i = 0; i < tam_dir; i++) {
+        printf("\n dir[%d] = bucket #%d", i, (diretorio.celulas[i].bucket_ref)->id);
+    }
+    printf("\n\n Tamanho do diretorio: %d", tam_dir);
+    printf("\n Numero de buckets: %d", (ID_NUM - 1));
+    
+    for (i = 0; i < tam_dir; i++) {
+        printf("\n\n == Bucket #%d ==", (diretorio.celulas[i].bucket_ref)->id);
+        printf("\n #id = %d\tdepth = %d", (diretorio.celulas[i].bucket_ref)->id, (diretorio.celulas[i].bucket_ref)->prof);
+        
+        for(j = 0; j < (diretorio.celulas[i].bucket_ref)->cont; j++) {
+            printf("\n chave[%d] = %d", j, (diretorio.celulas[i].bucket_ref)->chaves[j]);
+        }
+        
+        if (diretorio.celulas[i].bucket_ref != diretorio.celulas[i+1].bucket_ref) {
+            printf("\n\n == Bucket #%d ==", (diretorio.celulas[i+1].bucket_ref)->id);
+            printf("\n #id = %d\tdepth = %d", (diretorio.celulas[i+1].bucket_ref)->id, (diretorio.celulas[i+1].bucket_ref)->prof);
+            
+            for(j = 0; j < (diretorio.celulas[i+1].bucket_ref)->cont; j++) {
+                printf("\n chave[%d] = %d", j, (diretorio.celulas[i+1].bucket_ref)->chaves[j]);
+            }
+        }
+        i++;
+    }
+}
+
+
+void RegistraDiretorio(FILE *arqdir) {
+    
+    int i, tam_dir;
+    
+    fclose(arqdir);
+    arqdir = fopen("diretorio.txt", "w");
+    
+    fwrite(&ID_NUM, TAM_IDNUM, 1, arqdir);
+    fwrite(&diretorio.profundidade, TAM_DIRPROF, 1, arqdir);
+    
+    tam_dir = (int) pow(2, diretorio.profundidade);
+    
+    for (i = 0; i < tam_dir; i++) {
+        fwrite(&diretorio.celulas[i].bucket_ref, sizeof(BUCKET*), 1, arqdir);
+    }
+}
+
 void RecuperaDiretorio(FILE *arqdir) {   // Formato do arqdir: #ID_NUM#profundidade#dircell1#dircell2...
 
     int i, tam_dir;
@@ -226,7 +279,11 @@ int main () {
     if (arqdir == NULL) {
         arqdir = fopen("diretorio.txt", "w");
         diretorio.celulas = (DIR_CELL*) malloc(sizeof(DIR_CELL));
-        diretorio.celulas[0].bucket_ref = NULL;
+        diretorio.celulas[0].bucket_ref = (BUCKET*) malloc(sizeof(BUCKET));
+        (diretorio.celulas[0].bucket_ref)->cont = 0;
+        (diretorio.celulas[0].bucket_ref)->id = ID_NUM;
+        (diretorio.celulas[0].bucket_ref)->prof = 0;
+        ID_NUM++;
     }
     else {
         RecuperaDiretorio(arqdir);
